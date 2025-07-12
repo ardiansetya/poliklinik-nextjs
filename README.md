@@ -2,10 +2,11 @@
 
 ### ✅ **To-Do List Berdasarkan Use Case**
 
-#### 👑 **Admin**
-
 * [x] Setup DB
 * [x] Membuat model dan relasi
+
+#### 👑 **Admin**
+
 * [ ] Login sebagai Admin
 * [ ] Mengelola Dokter
 * [ ] Mengelola Pasien
