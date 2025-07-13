@@ -1,9 +1,8 @@
-// lib/actions.ts
 "use server";
+import { prisma } from "./prisma";
 
 import { hashSync } from "bcrypt-ts";
 import { redirect } from "next/navigation";
-import { prisma } from "./prisma";
 import { RegisterSchema } from "./zod";
 
 export const signUpCredentials = async (
@@ -20,30 +19,33 @@ export const signUpCredentials = async (
     };
   }
 
-  const { name, email, password } = validatedFields.data;
+  const { name, email, password, alamat, no_ktp, no_hp } = validatedFields.data;
 
   const hashedPassword = hashSync(password, 10);
 
+  // const existing = await prisma.user.findUnique({
+  //   where: { email },
+  // });
+
+  // if (existing) {
+  //   return { error: { email: "Email sudah terdaftar" } };
+  // }
+
   try {
-    // const existing = await prisma.user.findUnique({
-    //   where: { email },
-    // });
-
-    // if (existing) {
-    //   return { error: { email: "Email sudah terdaftar" } };
-    // }
-
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        alamat,
+        no_ktp,
+        no_hp,
       },
     });
-
-    redirect("/login");
+    console.log(user);
   } catch (error) {
-    console.log("REGISTER ERROR:", error);
-    return { message: "Gagal registrasi. Silakan coba lagi." };
+    console.log(error);
+   return { error: { email: "Email sudah terdaftar" } };
   }
+  redirect("/login");
 };
