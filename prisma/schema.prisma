@@ -10,8 +10,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -21,17 +21,51 @@ enum Role {
   ADMIN
 }
 
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  password  String
-  role      Role     @default(PASIEN)
-  no_hp     String?
-  alamat    String?
-  no_ktp    String?
-  no_rm     String?
-  id_poli   String?
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  password      String?
+  role          Role      @default(PASIEN)
+  no_hp         String?
+  alamat        String?
+  no_ktp        String?
+  no_rm         String?
+  id_poli       String?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
 
   // relasi dengan DaftarPoli
   daftarPoliPasien DaftarPoli[]
@@ -48,54 +82,61 @@ model User {
   @@map("users")
 }
 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
 model DaftarPoli {
-  id        String   @id @default(cuid())
-  id_pasien String
-  id_jadwal String
-  keluhan String
+  id         String @id @default(cuid())
+  id_pasien  String
+  id_jadwal  String
+  keluhan    String
   no_antrian Int
 
-  pasien   User     @relation(fields: [id_pasien], references: [id])
-  jadwal   JadwalPeriksa @relation(fields: [id_jadwal], references: [id])
-  periksa  Periksa[]
+  pasien  User          @relation(fields: [id_pasien], references: [id])
+  jadwal  JadwalPeriksa @relation(fields: [id_jadwal], references: [id])
+  periksa Periksa[]
 
   @@map("daftar_poli")
 }
 
-model JadwalPeriksa{
-  id       String   @id @default(cuid())
-  id_dokter String
-  hari      String  
-  jam_mulai DateTime
+model JadwalPeriksa {
+  id          String   @id @default(cuid())
+  id_dokter   String
+  hari        String
+  jam_mulai   DateTime
   jam_selesai DateTime
 
+  jadwalPeriksaDokter DaftarPoli[]
 
-  jadwalPeriksaDokter DaftarPoli[] 
-
-  dokter   User     @relation("JadwalPeriksaDokter",fields: [id_dokter], references: [id])
+  dokter User @relation("JadwalPeriksaDokter", fields: [id_dokter], references: [id])
 
   @@map("jadwal_periksa")
 }
 
 model Poli {
-  id        String   @id @default(cuid())
-  nama_poli      String
-  keterangan    String
+  id         String @id @default(cuid())
+  nama_poli  String
+  keterangan String
 
-  dokterList User[] 
+  dokterList User[]
 
   @@map("poli")
 }
 
 model Periksa {
-  id        String   @id @default(cuid())
+  id             String   @id @default(cuid())
   id_daftar_poli String
-  tgl_periksa DateTime
-  catatan String?
-  biaya Int
+  tgl_periksa    DateTime
+  catatan        String?
+  biaya          Int
 
   detailPeriksa DetailPeriksa[]
-
 
   daftarPoli DaftarPoli @relation(fields: [id_daftar_poli], references: [id])
 
@@ -103,24 +144,23 @@ model Periksa {
 }
 
 model DetailPeriksa {
-  id        String   @id @default(cuid())
+  id         String @id @default(cuid())
   id_periksa String
-  id_obat String
+  id_obat    String
 
-  periksa   Periksa @relation(fields: [id_periksa], references: [id])
-  obat      Obat    @relation(fields: [id_obat], references: [id])
+  periksa Periksa @relation(fields: [id_periksa], references: [id])
+  obat    Obat    @relation(fields: [id_obat], references: [id])
+
   @@map("detail_periksa")
 }
 
 model Obat {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   nama_obat String
-  kemasan String
-  harga Int
+  kemasan   String
+  harga     Int
 
   detailPeriksa DetailPeriksa[]
+
   @@map("obat")
 }
-
-
-
